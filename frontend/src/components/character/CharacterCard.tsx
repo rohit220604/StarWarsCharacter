@@ -3,13 +3,14 @@ import { Character } from '../../types/character'
 interface CharacterCardProps {
     character: Character
     onClick: () => void
+    speciesClass: string
 }
 
-export function CharacterCard({ character, onClick }: CharacterCardProps) {
+export function CharacterCard({ character, onClick, speciesClass }: CharacterCardProps) {
     const imageUrl = `https://picsum.photos/300/250?random=${encodeURIComponent(character.name)}`
 
     return (
-        <div className="character-card" onClick={onClick}>
+        <div className={`character-card ${speciesClass}`} onClick={onClick}>
             <img 
                 src={imageUrl} 
                 alt={character.name}

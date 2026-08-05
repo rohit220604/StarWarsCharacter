@@ -27,6 +27,81 @@ body {
     color: white;
 }
 
+.filters-container {
+    margin-bottom: 30px;
+}
+
+.search-section {
+    margin-bottom: 20px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background-color: #1e293b;
+    color: white;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+    border-color: #3b82f6;
+}
+
+.search-input::placeholder {
+    color: #94a3b8;
+}
+
+.filters-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+@media (min-width: 1024px) {
+    .filters-row {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .search-section {
+        flex: 1;
+        margin-bottom: 0;
+    }
+
+    .filters-dropdowns {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+}
+
+.filter-select {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #475569;
+    background-color: #1e293b;
+    color: white;
+    font-size: 0.95rem;
+    cursor: pointer;
+    outline: none;
+    min-width: 180px;
+    transition: border-color 0.2s ease;
+}
+
+.filter-select:focus {
+    border-color: #3b82f6;
+}
+
+.filter-select option {
+    background-color: #1e293b;
+    color: white;
+}
+
 .character-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -53,11 +128,28 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     cursor: pointer;
+    border-top: 4px solid #64748b;
 }
 
 .character-card:hover {
     transform: translateY(-8px) scale(1.03);
     box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+}
+
+.character-card.species-human {
+    border-top-color: #3b82f6;
+}
+
+.character-card.species-droid {
+    border-top-color: #eab308;
+}
+
+.character-card.species-wookiee {
+    border-top-color: #a16207;
+}
+
+.character-card.species-unknown {
+    border-top-color: #64748b;
 }
 
 .character-image {
