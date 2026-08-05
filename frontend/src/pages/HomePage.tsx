@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getCharacters } from '../services/character.service.js'
 import type { Character } from '../types/character.js'
 import { CharacterCard } from '../components/character/CharacterCard.js'
+import { CharacterModal } from '../components/character/CharacterModal.js'
 import { Loading } from '../components/common/Loading.js'
 import { ErrorMessage } from '../components/common/ErrorMessage.js'
 import '../styles/home.css'
@@ -13,6 +14,7 @@ export function HomePage() {
     const [currentPage, setCurrentPage] = useState(1)
     const [hasNext, setHasNext] = useState(false)
     const [hasPrevious, setHasPrevious] = useState(false)
+    const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null)
 
     useEffect(() => {
         fetchCharacters(currentPage)
@@ -62,7 +64,11 @@ export function HomePage() {
             
             <div className="character-grid">
                 {characters.map((character) => (
-                    <CharacterCard key={character.url} character={character} />
+                    <CharacterCard 
+                        key={character.url} 
+                        character={character} 
+                        onClick={() => setSelectedCharacter(character)}
+                    />
                 ))}
             </div>
 
@@ -83,6 +89,12 @@ export function HomePage() {
                     Next
                 </button>
             </div>
+
+            <CharacterModal 
+                isOpen={!!selectedCharacter}
+                character={selectedCharacter}
+                onClose={() => setSelectedCharacter(null)}
+            />
         </div>
     )
 }
