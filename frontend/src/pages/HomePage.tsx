@@ -4,6 +4,7 @@ import type { Character } from '../types/character.js'
 import { CharacterCard } from '../components/character/CharacterCard.js'
 import { Loading } from '../components/common/Loading.js'
 import { ErrorMessage } from '../components/common/ErrorMessage.js'
+import '../styles/home.css'
 
 export function HomePage() {
     const [characters, setCharacters] = useState<Character[]>([])
@@ -48,41 +49,36 @@ export function HomePage() {
     }
 
     if (loading) {
-        return <Loading />
+        return <div className="loading-container">Loading...</div>
     }
 
     if (error) {
-        return <ErrorMessage message={error} />
+        return <div className="error-container">{error}</div>
     }
 
     return (
-        <div style={{ padding: '20px' }}>
-            <h1>Star Wars Character Explorer</h1>
+        <div className="home-container">
+            <h1 className="home-title">Star Wars Character Explorer</h1>
             
-            <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                gap: '20px',
-                marginBottom: '20px'
-            }}>
+            <div className="character-grid">
                 {characters.map((character) => (
                     <CharacterCard key={character.url} character={character} />
                 ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <div className="pagination">
                 <button 
+                    className="pagination-button"
                     onClick={handlePrevious}
                     disabled={!hasPrevious}
-                    style={{ opacity: hasPrevious ? 1 : 0.5 }}
                 >
                     Previous
                 </button>
-                <span>Page {currentPage}</span>
+                <span className="page-number">Page {currentPage}</span>
                 <button 
+                    className="pagination-button"
                     onClick={handleNext}
                     disabled={!hasNext}
-                    style={{ opacity: hasNext ? 1 : 0.5 }}
                 >
                     Next
                 </button>
