@@ -1,18 +1,17 @@
 import { Routes, Route } from 'react-router-dom'
-
-function HomePage() {
-  return <div>Home Page</div>
-}
-
-function LoginPage() {
-  return <div>Login Page</div>
-}
+import { LoginPage } from './pages/LoginPage'
+import { HomePage } from './pages/HomePage'
+import { ProtectedRoute } from './routes/ProtectedRoute'
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={
+        <ProtectedRoute>
+          <HomePage />
+        </ProtectedRoute>
+      } />
     </Routes>
   )
 }
