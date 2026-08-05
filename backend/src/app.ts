@@ -7,13 +7,18 @@ import cookieParser from 'cookie-parser'
 const app = express()
 
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 app.use(cors())
 app.use(helmet())
 app.use(morgan('dev'))
 app.use(cookieParser())
 
 app.get('/health', (req, res) => {
-  res.json({ success: true })
+  res.json({ success: true, message: 'Server is running' })
+})
+
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Route not found' })
 })
 
 export default app
