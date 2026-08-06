@@ -9,6 +9,7 @@ interface User {
 interface AuthContextType {
     user: User | null
     isAuthenticated: boolean
+    loading: boolean
     login: (accessToken: string) => Promise<void>
     logout: () => void
 }
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const token = localStorage.getItem('accessToken')
@@ -28,6 +30,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .catch(() => {
                     localStorage.removeItem('accessToken')
                 })
+                .finally(() => {
+                    setLoading(false)
+                })
+        } else {
+            setLoading(false)
         }
     }, [])
 
@@ -43,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, login, logout }}>
             {children}
         </AuthContext.Provider>
     )

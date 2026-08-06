@@ -111,7 +111,7 @@ body {
 }
 
 .filters-container {
-    margin-bottom: 30px;
+    margin-bottom: 40px;
 }
 
 .search-section {
@@ -153,7 +153,7 @@ body {
 
     .search-section {
         flex: 1;
-        margin-bottom: 0;
+        margin-bottom: 20px;
     }
 
     .filters-dropdowns {
