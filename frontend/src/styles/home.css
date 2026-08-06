@@ -238,3 +238,54 @@ body {
     text-align: center;
     padding: 20px;
 }
+
+.load-more-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin: 40px 0;
+}
+
+.load-more-button {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 220px;
+    transition: all 0.2s ease;
+}
+
+.load-more-button:hover:not(:disabled) {
+    background-color: #2563eb;
+    transform: translateY(-2px);
+}
+
+.load-more-button:disabled {
+    background-color: #475569;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.load-more-error {
+    color: #ef4444;
+    font-size: 0.95rem;
+    text-align: center;
+    padding: 10px;
+    background-color: rgba(239, 68, 68, 0.1);
+    border-radius: 8px;
+    max-width: 400px;
+}
+
+.end-message {
+    text-align: center;
+    padding: 30px;
+    font-size: 1.1rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin: 40px 0;
+}

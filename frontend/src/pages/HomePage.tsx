@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { getCharacters } from '../services/character.service.js'
 import type { Character } from '../types/character.js'
 import { CharacterCard } from '../components/character/CharacterCard.js'
@@ -8,40 +8,69 @@ import { ErrorMessage } from '../components/common/ErrorMessage.js'
 import '../styles/home.css'
 
 export function HomePage() {
-    const [characters, setCharacters] = useState<Character[]>([])
+    const [pagesCache, setPagesCache] = useState<Record<number, Character[]>>({})
     const [loading, setLoading] = useState(true)
+    const [loadMoreLoading, setLoadMoreLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [currentPage, setCurrentPage] = useState(1)
     const [hasNext, setHasNext] = useState(false)
-    const [hasPrevious, setHasPrevious] = useState(false)
     const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [speciesFilter, setSpeciesFilter] = useState('All')
     const [homeworldFilter, setHomeworldFilter] = useState('All')
     const [filmFilter, setFilmFilter] = useState('All')
 
-    useEffect(() => {
-        fetchCharacters(currentPage)
-    }, [currentPage])
-
-    const homeworlds = Array.from(new Set(characters.map(c => c.homeworld)))
-
-    const filteredCharacters = characters.filter(character => {
-        const matchesSearch = character.name.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchesSpecies = speciesFilter === 'All' || 
-            (speciesFilter === 'Unknown' ? !character.species?.length : 
-             character.species?.some(s => s.includes(speciesFilter.toLowerCase())))
-        const matchesHomeworld = homeworldFilter === 'All' || character.homeworld === homeworldFilter
-        const matchesFilm = filmFilter === 'All' || 
-            (filmFilter === '1+' ? character.films.length >= 1 :
-             filmFilter === '2+' ? character.films.length >= 2 :
-             filmFilter === '3+' ? character.films.length >= 3 :
-             filmFilter === '4+' ? character.films.length >= 4 :
-             filmFilter === '5+' ? character.films.length >= 5 :
-             character.films.length === parseInt(filmFilter))
+    const fetchCharacters = async (page: number) => {
+        if (page === 1) {
+            setLoading(true)
+        } else {
+            setLoadMoreLoading(true)
+        }
+        setError(null)
         
-        return matchesSearch && matchesSpecies && matchesHomeworld && matchesFilm
-    })
+        try {
+            const response = await getCharacters(page)
+            setPagesCache(prev => ({
+                ...prev,
+                [page]: response.results
+            }))
+            setHasNext(response.next !== null)
+        } catch (err) {
+            setError('Failed to fetch characters. Please try again.')
+        } finally {
+            setLoading(false)
+            setLoadMoreLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchCharacters(1)
+    }, [])
+
+    const homeworlds = useMemo(() => {
+        const allCharacters = Object.values(pagesCache).flat()
+        return Array.from(new Set(allCharacters.map(c => c.homeworld)))
+    }, [pagesCache])
+
+    const filteredCharacters = useMemo(() => {
+        const allCharacters = Object.values(pagesCache).flat()
+        return allCharacters.filter(character => {
+            const matchesSearch = character.name.toLowerCase().includes(searchQuery.toLowerCase())
+            const matchesSpecies = speciesFilter === 'All' || 
+                (speciesFilter === 'Unknown' ? !character.species?.length : 
+                 character.species?.some(s => s.includes(speciesFilter.toLowerCase())))
+            const matchesHomeworld = homeworldFilter === 'All' || character.homeworld === homeworldFilter
+            const matchesFilm = filmFilter === 'All' || 
+                (filmFilter === '1+' ? character.films.length >= 1 :
+                 filmFilter === '2+' ? character.films.length >= 2 :
+                 filmFilter === '3+' ? character.films.length >= 3 :
+                 filmFilter === '4+' ? character.films.length >= 4 :
+                 filmFilter === '5+' ? character.films.length >= 5 :
+                 character.films.length === parseInt(filmFilter))
+            
+            return matchesSearch && matchesSpecies && matchesHomeworld && matchesFilm
+        })
+    }, [pagesCache, searchQuery, speciesFilter, homeworldFilter, filmFilter])
 
     const getSpeciesClass = (character: Character): string => {
         const species = character.species?.[0] || 'Unknown'
@@ -51,33 +80,11 @@ export function HomePage() {
         return 'species-unknown'
     }
 
-    const fetchCharacters = async (page: number) => {
-        setLoading(true)
-        setError(null)
-        
-        try {
-            const response = await getCharacters(page)
-            console.log("SWAPI Response:", response);
-
-            setCharacters(response.results)
-            setHasNext(response.next !== null)
-            setHasPrevious(response.previous !== null)
-        } catch (err) {
-            setError('Failed to fetch characters')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const handlePrevious = () => {
-        if (hasPrevious) {
-            setCurrentPage(currentPage - 1)
-        }
-    }
-
-    const handleNext = () => {
-        if (hasNext) {
-            setCurrentPage(currentPage + 1)
+    const handleLoadMore = () => {
+        if (!loadMoreLoading && hasNext) {
+            const nextPage = currentPage + 1
+            setCurrentPage(nextPage)
+            fetchCharacters(nextPage)
         }
     }
 
@@ -158,23 +165,24 @@ export function HomePage() {
                 ))}
             </div>
 
-            <div className="pagination">
-                <button 
-                    className="pagination-button"
-                    onClick={handlePrevious}
-                    disabled={!hasPrevious}
-                >
-                    Previous
-                </button>
-                <span className="page-number">Page {currentPage}</span>
-                <button 
-                    className="pagination-button"
-                    onClick={handleNext}
-                    disabled={!hasNext}
-                >
-                    Next
-                </button>
-            </div>
+            {hasNext && (
+                <div className="load-more-container">
+                    <button 
+                        className="load-more-button"
+                        onClick={handleLoadMore}
+                        disabled={loadMoreLoading}
+                    >
+                        {loadMoreLoading ? 'Loading...' : 'Load More'}
+                    </button>
+                    {error && <div className="load-more-error">{error}</div>}
+                </div>
+            )}
+
+            {!hasNext && Object.keys(pagesCache).length > 0 && (
+                <div className="end-message">
+                    You've reached the end of the galaxy.
+                </div>
+            )}
 
             <CharacterModal 
                 isOpen={!!selectedCharacter}

@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { backendApi } from '../services/api.js'
 
 interface User {
     id: string
@@ -8,7 +9,7 @@ interface User {
 interface AuthContextType {
     user: User | null
     isAuthenticated: boolean
-    login: (user: User) => void
+    login: (accessToken: string) => Promise<void>
     logout: () => void
 }
 
@@ -17,11 +18,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
 
-    const login = (userData: User) => {
-        setUser(userData)
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken')
+        if (token) {
+            backendApi.get('/auth/me')
+                .then((res) => {
+                    setUser(res.data.user)
+                })
+                .catch(() => {
+                    localStorage.removeItem('accessToken')
+                })
+        }
+    }, [])
+
+    const login = async (accessToken: string) => {
+        localStorage.setItem('accessToken', accessToken)
+        const res = await backendApi.get('/auth/me')
+        setUser(res.data.user)
     }
 
     const logout = () => {
+        localStorage.removeItem('accessToken')
         setUser(null)
     }
 
