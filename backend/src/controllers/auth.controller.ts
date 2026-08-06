@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { login as authLogin, getCurrentUser as authGetCurrentUser } from '../services/auth.service.js'
 
-export function login(req: Request, res: Response) {
+export async function login(req: Request, res: Response) {
     const { username, password } = req.body
     
     if (!username || !password) {
@@ -12,7 +12,7 @@ export function login(req: Request, res: Response) {
     }
     
     try {
-        const result = authLogin(username, password)
+        const result = await authLogin(username, password)
         return res.status(200).json({
             success: true,
             user: result.user,

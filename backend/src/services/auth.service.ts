@@ -7,8 +7,14 @@ const fakeUser = {
     passwordHash: bcrypt.hashSync('password123', 10)
 }
 
-export function login(username: string, password: string) {
-    if (username !== fakeUser.username || !bcrypt.compare(password, fakeUser.passwordHash)) {
+export async function login(username: string, password: string) {
+    if (username !== fakeUser.username) {
+        throw new Error("Invalid credentials")
+    }
+    
+    const validPassword = await bcrypt.compare(password, fakeUser.passwordHash)
+    
+    if (!validPassword) {
         throw new Error("Invalid credentials")
     }
     
