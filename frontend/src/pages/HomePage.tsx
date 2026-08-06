@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
+import toast, { Toaster } from 'react-hot-toast'
 import { getCharacters } from '../services/character.service.js'
 import type { Character } from '../types/character.js'
 import { CharacterCard } from '../components/character/CharacterCard.js'
 import { CharacterModal } from '../components/character/CharacterModal.js'
-import { Loading } from '../components/common/Loading.js'
-import { ErrorMessage } from '../components/common/ErrorMessage.js'
+import { SkeletonCard } from '../components/common/SkeletonCard.js'
+import { EmptyState } from '../components/common/EmptyState.js'
 import '../styles/home.css'
 
 export function HomePage() {
@@ -35,8 +36,11 @@ export function HomePage() {
                 [page]: response.results
             }))
             setHasNext(response.next !== null)
+            toast.success('Character loaded')
         } catch (err) {
-            setError('Failed to fetch characters. Please try again.')
+            const errorMsg = 'Failed loading data'
+            setError(errorMsg)
+            toast.error(errorMsg)
         } finally {
             setLoading(false)
             setLoadMoreLoading(false)
@@ -88,17 +92,42 @@ export function HomePage() {
         }
     }
 
-    if (loading) {
-        return <div className="loading-container">Loading...</div>
+    const handleResetFilters = () => {
+        setSearchQuery('')
+        setSpeciesFilter('All')
+        setHomeworldFilter('All')
+        setFilmFilter('All')
     }
 
-    if (error) {
-        return <div className="error-container">{error}</div>
+    if (loading) {
+        return (
+            <div className="home-container">
+                <Toaster position="top-right" />
+                <div className="hero-section">
+                    <h1 className="hero-title">Star Wars Character Explorer</h1>
+                    <p className="hero-subtitle">
+                        Browse every Star Wars character with detailed information powered by SWAPI.
+                    </p>
+                </div>
+                <div className="character-grid">
+                    {Array.from({ length: 10 }).map((_, index) => (
+                        <SkeletonCard key={index} />
+                    ))}
+                </div>
+            </div>
+        )
     }
 
     return (
         <div className="home-container">
-            <h1 className="home-title">Star Wars Character Explorer</h1>
+            <Toaster position="top-right" />
+            
+            <div className="hero-section">
+                <h1 className="hero-title">Star Wars Character Explorer</h1>
+                <p className="hero-subtitle">
+                    Browse every Star Wars character with detailed information powered by SWAPI.
+                </p>
+            </div>
             
             <div className="filters-container">
                 <div className="search-section">
@@ -154,35 +183,45 @@ export function HomePage() {
                 </div>
             </div>
 
-            <div className="character-grid">
-                {filteredCharacters.map((character) => (
-                    <CharacterCard 
-                        key={character.url} 
-                        character={character} 
-                        onClick={() => setSelectedCharacter(character)}
-                        speciesClass={getSpeciesClass(character)}
-                    />
-                ))}
-            </div>
+            {filteredCharacters.length === 0 ? (
+                <EmptyState onReset={handleResetFilters} />
+            ) : (
+                <>
+                    <div className="character-grid">
+                        {filteredCharacters.map((character) => (
+                            <CharacterCard 
+                                key={character.url} 
+                                character={character} 
+                                onClick={() => setSelectedCharacter(character)}
+                                speciesClass={getSpeciesClass(character)}
+                            />
+                        ))}
+                    </div>
 
-            {hasNext && (
-                <div className="load-more-container">
-                    <button 
-                        className="load-more-button"
-                        onClick={handleLoadMore}
-                        disabled={loadMoreLoading}
-                    >
-                        {loadMoreLoading ? 'Loading...' : 'Load More'}
-                    </button>
-                    {error && <div className="load-more-error">{error}</div>}
-                </div>
+                    {hasNext && (
+                        <div className="load-more-container">
+                            <button 
+                                className="load-more-button"
+                                onClick={handleLoadMore}
+                                disabled={loadMoreLoading}
+                            >
+                                {loadMoreLoading ? 'Loading...' : 'Load More'}
+                            </button>
+                            {error && <div className="load-more-error">{error}</div>}
+                        </div>
+                    )}
+
+                    {!hasNext && Object.keys(pagesCache).length > 0 && (
+                        <div className="end-message">
+                            You've reached the end of the galaxy.
+                        </div>
+                    )}
+                </>
             )}
 
-            {!hasNext && Object.keys(pagesCache).length > 0 && (
-                <div className="end-message">
-                    You've reached the end of the galaxy.
-                </div>
-            )}
+            <footer className="footer">
+                <p>Built with React, TypeScript & SWAPI</p>
+            </footer>
 
             <CharacterModal 
                 isOpen={!!selectedCharacter}
