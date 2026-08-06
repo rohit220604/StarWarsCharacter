@@ -8,8 +8,10 @@ export interface Character {
     birth_year: string
     gender: string
     homeworld: string
+    homeworldName: string
     films: string[]
     species: string[]
+    speciesName: string
     vehicles: string[]
     starships: string[]
     created: string

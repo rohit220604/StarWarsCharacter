@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
-import { getCharacters } from '../services/character.service.js'
+import { getAllCharacters } from '../services/character.service.js'
 import type { Character } from '../types/character.js'
 import { CharacterCard } from '../components/character/CharacterCard.js'
 import { CharacterModal } from '../components/character/CharacterModal.js'
@@ -8,62 +8,55 @@ import { SkeletonCard } from '../components/common/SkeletonCard.js'
 import { EmptyState } from '../components/common/EmptyState.js'
 import '../styles/home.css'
 
+const ITEMS_PER_PAGE = 10
+
 export function HomePage() {
-    const [pagesCache, setPagesCache] = useState<Record<number, Character[]>>({})
+    const [allCharacters, setAllCharacters] = useState<Character[]>([])
     const [loading, setLoading] = useState(true)
     const [loadMoreLoading, setLoadMoreLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [currentPage, setCurrentPage] = useState(1)
-    const [hasNext, setHasNext] = useState(false)
     const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [speciesFilter, setSpeciesFilter] = useState('All')
     const [homeworldFilter, setHomeworldFilter] = useState('All')
     const [filmFilter, setFilmFilter] = useState('All')
 
-    const fetchCharacters = async (page: number) => {
-        if (page === 1) {
-            setLoading(true)
-        } else {
-            setLoadMoreLoading(true)
-        }
-        setError(null)
-        
-        try {
-            const response = await getCharacters(page)
-            setPagesCache(prev => ({
-                ...prev,
-                [page]: response.results
-            }))
-            setHasNext(response.next !== null)
-            toast.success('Character loaded')
-        } catch (err) {
-            const errorMsg = 'Failed loading data'
-            setError(errorMsg)
-            toast.error(errorMsg)
-        } finally {
-            setLoading(false)
-            setLoadMoreLoading(false)
-        }
-    }
-
     useEffect(() => {
-        fetchCharacters(1)
+        const fetchAllCharacters = async () => {
+            setLoading(true)
+            setError(null)
+            
+            try {
+                const characters = await getAllCharacters()
+                setAllCharacters(characters)
+                toast.success('Character loaded')
+            } catch (err) {
+                const errorMsg = 'Failed loading data'
+                setError(errorMsg)
+                toast.error(errorMsg)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchAllCharacters()
     }, [])
 
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchQuery, speciesFilter, homeworldFilter, filmFilter])
+
     const homeworlds = useMemo(() => {
-        const allCharacters = Object.values(pagesCache).flat()
-        return Array.from(new Set(allCharacters.map(c => c.homeworld)))
-    }, [pagesCache])
+        return Array.from(new Set(allCharacters.map(c => c.homeworldName)))
+    }, [allCharacters])
 
     const filteredCharacters = useMemo(() => {
-        const allCharacters = Object.values(pagesCache).flat()
         return allCharacters.filter(character => {
             const matchesSearch = character.name.toLowerCase().includes(searchQuery.toLowerCase())
             const matchesSpecies = speciesFilter === 'All' || 
-                (speciesFilter === 'Unknown' ? !character.species?.length : 
-                 character.species?.some(s => s.includes(speciesFilter.toLowerCase())))
-            const matchesHomeworld = homeworldFilter === 'All' || character.homeworld === homeworldFilter
+                character.speciesName.toLowerCase() === speciesFilter.toLowerCase()
+            const matchesHomeworld = homeworldFilter === 'All' || character.homeworldName === homeworldFilter
             const matchesFilm = filmFilter === 'All' || 
                 (filmFilter === '1+' ? character.films.length >= 1 :
                  filmFilter === '2+' ? character.films.length >= 2 :
@@ -74,22 +67,70 @@ export function HomePage() {
             
             return matchesSearch && matchesSpecies && matchesHomeworld && matchesFilm
         })
-    }, [pagesCache, searchQuery, speciesFilter, homeworldFilter, filmFilter])
+    }, [allCharacters, searchQuery, speciesFilter, homeworldFilter, filmFilter])
+
+    const totalPages = Math.ceil(filteredCharacters.length / ITEMS_PER_PAGE)
+    
+    const displayedCharacters = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+        const endIndex = startIndex + ITEMS_PER_PAGE
+        return filteredCharacters.slice(startIndex, endIndex)
+    }, [filteredCharacters, currentPage])
 
     const getSpeciesClass = (character: Character): string => {
-        const species = character.species?.[0] || 'Unknown'
-        if (species.includes('human')) return 'species-human'
-        if (species.includes('droid')) return 'species-droid'
-        if (species.includes('wookiee')) return 'species-wookiee'
+        const speciesName = character.speciesName.toLowerCase()
+        if (speciesName.includes('human')) return 'species-human'
+        if (speciesName.includes('droid')) return 'species-droid'
+        if (speciesName.includes('wookiee')) return 'species-wookiee'
         return 'species-unknown'
     }
 
-    const handleLoadMore = () => {
-        if (!loadMoreLoading && hasNext) {
-            const nextPage = currentPage + 1
-            setCurrentPage(nextPage)
-            fetchCharacters(nextPage)
+    const handlePrevious = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1)
         }
+    }
+
+    const handleNext = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1)
+        }
+    }
+
+    const handlePageClick = (page: number) => {
+        setCurrentPage(page)
+    }
+
+    const getPageNumbers = (): (number | string)[] => {
+        const pages: (number | string)[] = []
+        const maxVisiblePages = 9
+        
+        if (totalPages <= maxVisiblePages) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i)
+            }
+        } else {
+            pages.push(1)
+            
+            if (currentPage > 3) {
+                pages.push('...')
+            }
+            
+            const start = Math.max(2, currentPage - 1)
+            const end = Math.min(totalPages - 1, currentPage + 1)
+            
+            for (let i = start; i <= end; i++) {
+                pages.push(i)
+            }
+            
+            if (currentPage < totalPages - 2) {
+                pages.push('...')
+            }
+            
+            pages.push(totalPages)
+        }
+        
+        return pages
     }
 
     const handleResetFilters = () => {
@@ -188,7 +229,7 @@ export function HomePage() {
             ) : (
                 <>
                     <div className="character-grid">
-                        {filteredCharacters.map((character) => (
+                        {displayedCharacters.map((character) => (
                             <CharacterCard 
                                 key={character.url} 
                                 character={character} 
@@ -198,22 +239,41 @@ export function HomePage() {
                         ))}
                     </div>
 
-                    {hasNext && (
-                        <div className="load-more-container">
+                    {totalPages > 1 && (
+                        <div className="pagination">
                             <button 
-                                className="load-more-button"
-                                onClick={handleLoadMore}
-                                disabled={loadMoreLoading}
+                                className="pagination-button"
+                                onClick={handlePrevious}
+                                disabled={currentPage === 1}
                             >
-                                {loadMoreLoading ? 'Loading...' : 'Load More'}
+                                Previous
                             </button>
-                            {error && <div className="load-more-error">{error}</div>}
-                        </div>
-                    )}
-
-                    {!hasNext && Object.keys(pagesCache).length > 0 && (
-                        <div className="end-message">
-                            You've reached the end of the galaxy.
+                            
+                            <div className="pagination-pages">
+                                {getPageNumbers().map((page, index) => (
+                                    page === '...' ? (
+                                        <span key={`ellipsis-${index}`} className="pagination-ellipsis">
+                                            ...
+                                        </span>
+                                    ) : (
+                                        <button
+                                            key={page}
+                                            className={`pagination-page ${currentPage === page ? 'active' : ''}`}
+                                            onClick={() => handlePageClick(page as number)}
+                                        >
+                                            {page}
+                                        </button>
+                                    )
+                                ))}
+                            </div>
+                            
+                            <button 
+                                className="pagination-button"
+                                onClick={handleNext}
+                                disabled={currentPage === totalPages}
+                            >
+                                Next
+                            </button>
                         </div>
                     )}
                 </>
